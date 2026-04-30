@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Найди пары</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            padding: 20px;
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .game-container {
+            text-align: center;
+            max-width: 520px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #a29bfe, #fd79a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .score-box {
+            background: rgba(255,255,255,0.08);
+            padding: 10px 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .score-box .label { font-size: 0.75rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+        .score-box .value { font-size: 1.5rem; font-weight: bold; color: #a29bfe; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 0 auto 20px;
+            max-width: 400px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            border-radius: 14px;
+            background: linear-gradient(145deg, rgba(162,155,254,0.25), rgba(253,121,168,0.15));
+            border: 2px solid rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            cursor: pointer;
+            transition: transform 0.25s ease, border-color 0.2s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover:not(.flipped):not(.matched) {
+            transform: scale(1.03);
+            border-color: rgba(162,155,254,0.5);
+            background: linear-gradient(145deg, rgba(162,155,254,0.35), rgba(253,121,168,0.25));
+        }
+
+        .card.flipped,
+        .card.matched {
+            cursor: default;
+        }
+
+        .card.matched {
+            border-color: rgba(0,230,118,0.5);
+            background: linear-gradient(145deg, rgba(0,230,118,0.2), rgba(0,200,100,0.15));
+            transform: scale(0.98);
+        }
+
+        .card .face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .card .back {
+            background: linear-gradient(145deg, #2d2d44, #1e1e32);
+            border-radius: 12px;
+            margin: 4px;
+            font-size: 1.8rem;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .card .front {
+            transform: rotateY(180deg);
+        }
+
+        .card.flipped .back { transform: rotateY(-180deg); }
+        .card.flipped .front { transform: rotateY(0); }
+
+        .card .back,
+        .card .front {
+            transition: transform 0.35s ease;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #a29bfe, #fd79a8);
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .btn:hover { filter: brightness(1.1); }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26,26,46,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+        }
+
+        .overlay.visible { display: flex; }
+
+        .overlay h2 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #a29bfe, #fd79a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .overlay p { color: rgba(255,255,255,0.8); }
+
+        @media (max-width: 440px) {
+            .grid { gap: 8px; }
+            .card { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Найди пары</h1>
+        <p class="subtitle">Открой две карты с одинаковыми символами</p>
+        <div class="score-board">
+            <div class="score-box"><span class="label">Ходы</span><br><span class="value" id="moves">0</span></div>
+            <div class="score-box"><span class="label">Пар найдено</span><br><span class="value" id="pairs">0</span></div>
+        </div>
+        <div class="grid" id="grid"></div>
+        <button class="btn" id="btnNew">Новая игра</button>
+    </div>
+
+    <div class="overlay visible" id="startOverlay">
+        <h2>Найди пары</h2>
+        <p>Открывай по две карты и находи одинаковые символы. Меньше ходов — лучше результат!</p>
+        <button class="btn" id="btnStart">Играть</button>
+    </div>
+
+    <div class="overlay" id="winOverlay">
+        <h2>Победа!</h2>
+        <p>Все пары найдены за <span id="winMoves">0</span> ходов.</p>
+        <button class="btn" id="btnWinAgain">Ещё раз</button>
+    </div>
+
+    <script>
+(function() {
+    // Блокируем «резину»/скролл на мобилке внутри игры
+    document.addEventListener('touchmove', (e) => {
+        if (!e.cancelable) return;
+        const t = e.target;
+        const inGame = (t && t.closest) ? !!t.closest('button, .grid, .card, .game-container, .overlay') : false;
+        if (inGame) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('gesturestart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+
+    const EMOJIS = ['🌸','🌟','🎵','🔥','💎','🐱','🦋','🚀','🎮','🌈','🍀','⚡'];
+    const PAIRS_COUNT = 8;
+    const TOTAL = PAIRS_COUNT * 2;
+
+    const gridEl = document.getElementById('grid');
+    const movesEl = document.getElementById('moves');
+    const pairsEl = document.getElementById('pairs');
+
+    let moves = 0, pairsFound = 0;
+    let openCards = [];
+    let locked = false;
+    let cards = [];
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function createCards() {
+        const symbols = shuffle(EMOJIS).slice(0, PAIRS_COUNT);
+        const list = [];
+        symbols.forEach(s => { list.push(s); list.push(s); });
+        return shuffle(list);
+    }
+
+    function buildGrid() {
+        gridEl.innerHTML = '';
+        cards = createCards();
+        cards.forEach((emoji, i) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.index = i;
+            card.dataset.emoji = emoji;
+            card.innerHTML = `
+                <span class="face back">?</span>
+                <span class="face front">${emoji}</span>
+            `;
+            card.addEventListener('click', () => flipCard(card));
+            gridEl.appendChild(card);
+        });
+    }
+
+    function flipCard(card) {
+        if (locked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+        card.classList.add('flipped');
+        openCards.push(card);
+
+        if (openCards.length === 2) {
+            moves++;
+            movesEl.textContent = moves;
+            locked = true;
+            const [a, b] = openCards;
+            if (a.dataset.emoji === b.dataset.emoji) {
+                a.classList.add('matched');
+                b.classList.add('matched');
+                pairsFound++;
+                pairsEl.textContent = pairsFound;
+                openCards = [];
+                locked = false;
+                if (pairsFound === PAIRS_COUNT) {
+                    setTimeout(() => {
+                        document.getElementById('winMoves').textContent = moves;
+                        document.getElementById('winOverlay').classList.add('visible');
+                    }, 400);
+                }
+            } else {
+                setTimeout(() => {
+                    a.classList.remove('flipped');
+                    b.classList.remove('flipped');
+                    openCards = [];
+                    locked = false;
+                }, 700);
+            }
+        }
+    }
+
+    function newGame() {
+        moves = 0;
+        pairsFound = 0;
+        openCards = [];
+        locked = false;
+        movesEl.textContent = '0';
+        pairsEl.textContent = '0';
+        buildGrid();
+    }
+
+    document.getElementById('btnStart').onclick = () => {
+        document.getElementById('startOverlay').classList.remove('visible');
+        newGame();
+    };
+    document.getElementById('btnNew').onclick = newGame;
+    document.getElementById('btnWinAgain').onclick = () => {
+        document.getElementById('winOverlay').classList.remove('visible');
+        newGame();
+    };
+
+    buildGrid();
+})();
+    </script>
+</body>
+</html>

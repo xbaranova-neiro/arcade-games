@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Объезд</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0f1520;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            touch-action: none;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .game-container { text-align: center; }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
+        .score-box {
+            background: rgba(255,255,255,0.08);
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .score-box .label { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+        .score-box .value { font-size: 1.35rem; font-weight: bold; color: #ffb347; }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            border: 2px solid rgba(255,179,71,0.35);
+            background: #2d3436;
+            cursor: pointer;
+            width: min(94vw, 420px);
+            height: auto;
+        }
+
+        .hint {
+            margin-top: 10px;
+            color: rgba(255,255,255,0.45);
+            font-size: 0.88rem;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .overlay.visible { display: flex; }
+
+        .overlay h2 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .overlay p { color: rgba(255,255,255,0.82); text-align: center; max-width: 320px; line-height: 1.45; }
+
+        .overlay button {
+            padding: 13px 32px;
+            font-size: 1.05rem;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .overlay button:hover { filter: brightness(1.12); }
+
+        @media (max-width: 520px) {
+            canvas { max-width: 100vw; height: auto; }
+            h1 { font-size: 1.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>ОБЪЕЗД</h1>
+        <p class="subtitle">Влево-вправо — уклоняйся от встречных машин</p>
+        <div class="score-board">
+            <div class="score-box"><span class="label">Очки</span><br><span class="value" id="score">0</span></div>
+            <div class="score-box"><span class="label">Рекорд</span><br><span class="value" id="best">0</span></div>
+        </div>
+        <canvas id="game" width="360" height="560"></canvas>
+        <p class="hint">Стрелки ← → или A / D. На телефоне — води пальцем по дороге.</p>
+    </div>
+
+    <div class="overlay visible" id="startOverlay">
+        <h2>ОБЪЕЗД</h2>
+        <p>Держи свою полосу, уворачивайся от красных машин. Чем дольше едешь — тем быстрее трафик.</p>
+        <button type="button" id="btnStart">СТАРТ</button>
+    </div>
+
+    <div class="overlay" id="loseOverlay">
+        <h2>Столкновение</h2>
+        <p>Очки: <span id="loseScore">0</span></p>
+        <button type="button" id="btnAgain">ЗАНОВО</button>
+    </div>
+
+    <script>
+(function() {
+    // Блокируем «резину»/скролл на мобилке внутри игры
+    document.addEventListener('touchmove', (e) => {
+        if (!e.cancelable) return;
+        const t = e.target;
+        const inGame = (t && t.closest) ? !!t.closest('canvas, button, .game-container') : false;
+        if (inGame) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('gesturestart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const CW = canvas.width;
+    const CH = canvas.height;
+
+    const LANES = 3;
+    const ROAD_MARGIN = 8;
+    const ROAD_W = CW - ROAD_MARGIN * 2;
+    const LANE_W = ROAD_W / LANES;
+
+    const CAR_W = LANE_W * 0.62;
+    const CAR_H = CAR_W * 1.45;
+    const PLAYER_Y = CH - CAR_H - 28;
+
+    const keys = {};
+    let gameRunning = false;
+    let score = 0;
+    let best = parseInt(localStorage.getItem('trafficDodgeBest') || '0', 10) || 0;
+    let playerX = ROAD_MARGIN + (ROAD_W - CAR_W) / 2;
+
+    let enemies = [];
+    let spawnTimer = 0;
+    /** Базовый интервал кадров между появлением машин (чем больше — тем реже трафик) */
+    let nextSpawn = 92;
+    let roadOffset = 0;
+    let difficulty = 1;
+
+    document.getElementById('best').textContent = best;
+
+    function laneCenter(lane) {
+        return ROAD_MARGIN + (lane + 0.5) * LANE_W;
+    }
+
+    function clampPlayer() {
+        const minX = ROAD_MARGIN + CAR_W / 2;
+        const maxX = ROAD_MARGIN + ROAD_W - CAR_W / 2;
+        const cx = playerX + CAR_W / 2;
+        const ncx = Math.max(minX, Math.min(maxX, cx));
+        playerX = ncx - CAR_W / 2;
+    }
+
+    function drawCar(x, y, w, h, bodyColor, roofColor) {
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(x, y + h * 0.2, w, h * 0.8);
+
+        ctx.fillStyle = roofColor;
+        ctx.fillRect(x + w * 0.2, y + h * 0.36, w * 0.6, h * 0.3);
+
+        ctx.fillStyle = '#111';
+        const wh = h * 0.08;
+        ctx.fillRect(x + w * 0.1, y + h * 0.88, w * 0.24, wh);
+        ctx.fillRect(x + w * 0.66, y + h * 0.88, w * 0.24, wh);
+    }
+
+    function resetGame() {
+        score = 0;
+        difficulty = 1;
+        enemies = [];
+        spawnTimer = 0;
+        nextSpawn = 92;
+        playerX = ROAD_MARGIN + (ROAD_W - CAR_W) / 2;
+        roadOffset = 0;
+        document.getElementById('score').textContent = '0';
+    }
+
+    function startGame() {
+        resetGame();
+        gameRunning = true;
+    }
+
+    /** Минимальный «зазор» по вертикали в одной полосе до следующего спавна (хвост↔капот) */
+    function minLaneHeadway() {
+        return CAR_H * 2.35 + 55;
+    }
+
+    function laneHasSpace(lane) {
+        const headway = minLaneHeadway();
+        for (let i = 0; i < enemies.length; i++) {
+            if (enemies[i].lane !== lane) continue;
+            if (enemies[i].y < headway) return false;
+        }
+        return true;
+    }
+
+    /** Пытается создать машину; false — все полосы заняты, подождём кадр */
+    function trySpawnEnemy() {
+        const order = [0, 1, 2].sort(() => Math.random() - 0.5);
+        let lane = -1;
+        for (let k = 0; k < order.length; k++) {
+            if (laneHasSpace(order[k])) {
+                lane = order[k];
+                break;
+            }
+        }
+        if (lane < 0) return false;
+
+        const cx = laneCenter(lane);
+        const x = cx - CAR_W / 2;
+        const palette = ['#e74c3c', '#c0392b', '#e67e22', '#9b59b6'];
+        const body = palette[Math.floor(Math.random() * palette.length)];
+        const roof = 'rgba(0,0,0,0.25)';
+        enemies.push({
+            lane,
+            x,
+            y: -CAR_H - 10,
+            w: CAR_W,
+            h: CAR_H,
+            body,
+            roof,
+            vy: 2.45 + difficulty * 0.38 + Math.random() * 0.45
+        });
+        return true;
+    }
+
+    function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+    }
+
+    function drawRoad() {
+        ctx.fillStyle = '#3d4446';
+        ctx.fillRect(ROAD_MARGIN, 0, ROAD_W, CH);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([18, 22]);
+        const dashSpeed = 4 + difficulty * 0.8;
+        roadOffset = (roadOffset + dashSpeed) % 40;
+        ctx.lineDashOffset = -roadOffset;
+
+        for (let i = 1; i < LANES; i++) {
+            const lx = ROAD_MARGIN + i * LANE_W;
+            ctx.beginPath();
+            ctx.moveTo(lx, 0);
+            ctx.lineTo(lx, CH);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+
+        ctx.strokeStyle = 'rgba(255,179,71,0.5)';
+        ctx.strokeRect(ROAD_MARGIN + 1, 1, ROAD_W - 2, CH - 2);
+    }
+
+    function draw() {
+        ctx.fillStyle = '#1e272e';
+        ctx.fillRect(0, 0, CW, CH);
+
+        drawRoad();
+
+        enemies.forEach(e => drawCar(e.x, e.y, e.w, e.h, e.body, e.roof));
+        drawCar(playerX, PLAYER_Y, CAR_W, CAR_H, '#00cec9', 'rgba(0,0,0,0.2)');
+    }
+
+    function gameOver() {
+        gameRunning = false;
+        if (score > best) {
+            best = score;
+            localStorage.setItem('trafficDodgeBest', String(best));
+            document.getElementById('best').textContent = best;
+        }
+        document.getElementById('loseScore').textContent = score;
+        document.getElementById('loseOverlay').classList.add('visible');
+    }
+
+    function update() {
+        if (!gameRunning) return;
+
+        const speed = 6 + difficulty * 0.4;
+        if (keys['arrowleft'] || keys['a']) playerX -= speed;
+        if (keys['arrowright'] || keys['d']) playerX += speed;
+        clampPlayer();
+
+        score += 0.35 + difficulty * 0.08;
+        document.getElementById('score').textContent = Math.floor(score);
+        difficulty = 1 + Math.floor(score / 520) * 0.28;
+
+        spawnTimer++;
+        const interval = Math.max(48, nextSpawn - Math.floor(score / 200));
+        if (spawnTimer >= interval) {
+            spawnTimer = 0;
+            if (!trySpawnEnemy()) spawnTimer = Math.floor(interval * 0.35);
+        }
+
+        const py = PLAYER_Y;
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const e = enemies[i];
+            e.y += e.vy;
+            if (rectsOverlap(playerX, py, CAR_W, CAR_H, e.x, e.y, e.w, e.h)) {
+                gameOver();
+                return;
+            }
+            if (e.y > CH + 20) enemies.splice(i, 1);
+        }
+    }
+
+    document.addEventListener('keydown', e => {
+        keys[e.key.toLowerCase()] = true;
+        if (['arrowleft', 'arrowright', 'a', 'd'].includes(e.key.toLowerCase())) e.preventDefault();
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    let touchActive = false;
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        touchActive = true;
+        moveToTouch(e.touches[0]);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (touchActive) moveToTouch(e.touches[0]);
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { touchActive = false; });
+    canvas.addEventListener('touchcancel', () => { touchActive = false; });
+
+    function moveToTouch(t) {
+        const r = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / r.width;
+        const tx = (t.clientX - r.left) * scaleX;
+        playerX = tx - CAR_W / 2;
+        clampPlayer();
+    }
+
+    canvas.addEventListener('mousedown', e => {
+        if (!gameRunning) return;
+        const r = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / r.width;
+        const mx = (e.clientX - r.left) * scaleX;
+        playerX = mx - CAR_W / 2;
+        clampPlayer();
+    });
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    document.getElementById('btnStart').onclick = () => {
+        document.getElementById('startOverlay').classList.remove('visible');
+        startGame();
+    };
+    document.getElementById('btnAgain').onclick = () => {
+        document.getElementById('loseOverlay').classList.remove('visible');
+        startGame();
+    };
+})();
+    </script>
+</body>
+</html>

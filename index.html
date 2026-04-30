@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Аркадный Зал</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a1a;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            background: radial-gradient(ellipse at center top, rgba(108, 92, 231, 0.15) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #a29bfe, #fd79a8, #feca57, #00cec9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes shimmer {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(30deg); }
+        }
+
+        .hero p {
+            color: rgba(255,255,255,0.5);
+            font-size: 1.15rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px 30px 60px;
+        }
+
+        .game-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 20px;
+            padding: 30px 25px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: #fff;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-card .emoji {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .game-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        .game-card p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .game-card .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-top: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        /* Индивидуальные цвета */
+        .card-snake::before { background: linear-gradient(90deg, #00ff88, #00ccff); }
+        .card-snake:hover { border-color: rgba(0, 255, 136, 0.3); }
+        .card-snake h2 { color: #00ff88; }
+        .card-snake .tag { background: rgba(0, 255, 136, 0.15); color: #00ff88; }
+
+        .card-2048::before { background: linear-gradient(90deg, #f7b731, #fc5c65); }
+        .card-2048:hover { border-color: rgba(247, 183, 49, 0.3); }
+        .card-2048 h2 { color: #f7b731; }
+        .card-2048 .tag { background: rgba(247, 183, 49, 0.15); color: #f7b731; }
+
+        .card-flappy::before { background: linear-gradient(90deg, #feca57, #ff6348); }
+        .card-flappy:hover { border-color: rgba(254, 202, 87, 0.3); }
+        .card-flappy h2 { color: #feca57; }
+        .card-flappy .tag { background: rgba(254, 202, 87, 0.15); color: #feca57; }
+
+        .card-tower::before { background: linear-gradient(90deg, #a29bfe, #6c5ce7); }
+        .card-tower:hover { border-color: rgba(162, 155, 254, 0.3); }
+        .card-tower h2 { color: #a29bfe; }
+        .card-tower .tag { background: rgba(162, 155, 254, 0.15); color: #a29bfe; }
+
+        .card-platform::before { background: linear-gradient(90deg, #ff9ff3, #f368e0); }
+        .card-platform:hover { border-color: rgba(243, 104, 224, 0.3); }
+        .card-platform h2 { color: #ff9ff3; }
+        .card-platform .tag { background: rgba(243, 104, 224, 0.15); color: #ff9ff3; }
+
+        .card-roguelike::before { background: linear-gradient(90deg, #e056fd, #be2edd); }
+        .card-roguelike:hover { border-color: rgba(224, 86, 253, 0.3); }
+        .card-roguelike h2 { color: #e056fd; }
+        .card-roguelike .tag { background: rgba(224, 86, 253, 0.15); color: #e056fd; }
+
+        .card-space::before { background: linear-gradient(90deg, #00ff00, #00cc44); }
+        .card-space:hover { border-color: rgba(0, 255, 0, 0.3); }
+        .card-space h2 { color: #00ff00; }
+        .card-space .tag { background: rgba(0, 255, 0, 0.15); color: #00ff00; }
+
+        .card-racing::before { background: linear-gradient(90deg, #ff3300, #ff8800); }
+        .card-racing:hover { border-color: rgba(255, 51, 0, 0.3); }
+        .card-racing h2 { color: #ff5500; }
+        .card-racing .tag { background: rgba(255, 51, 0, 0.15); color: #ff5500; }
+
+        .card-drift::before { background: linear-gradient(90deg, #ff00aa, #00ddff); }
+        .card-drift:hover { border-color: rgba(255, 0, 170, 0.3); }
+        .card-drift h2 { color: #ff00aa; }
+        .card-drift .tag { background: rgba(255, 0, 170, 0.15); color: #00ddff; }
+
+        .card-drift3d::before { background: linear-gradient(90deg, #ff9800, #ff5722); }
+        .card-drift3d:hover { border-color: rgba(255, 152, 0, 0.3); }
+        .card-drift3d h2 { color: #ffb74d; }
+        .card-drift3d .tag { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+
+        .card-circuit::before { background: linear-gradient(90deg, #ff4400, #ffcc00); }
+        .card-circuit:hover { border-color: rgba(255, 68, 0, 0.3); }
+        .card-circuit h2 { color: #ff6622; }
+        .card-circuit .tag { background: rgba(255, 68, 0, 0.15); color: #ffcc00; }
+
+        .card-lowpoly::before { background: linear-gradient(90deg, #40e0d0, #98d982); }
+        .card-lowpoly:hover { border-color: rgba(64, 224, 208, 0.3); }
+        .card-lowpoly h2 { color: #40e0d0; }
+        .card-lowpoly .tag { background: rgba(64, 224, 208, 0.15); color: #98d982; }
+
+        .card-motorcycle::before { background: linear-gradient(90deg, #e74c3c, #e67e22); }
+        .card-motorcycle:hover { border-color: rgba(231, 76, 60, 0.3); }
+        .card-motorcycle h2 { color: #e74c3c; }
+        .card-motorcycle .tag { background: rgba(231, 76, 60, 0.15); color: #e67e22; }
+
+        .card-breakout::before { background: linear-gradient(90deg, #00d9ff, #ff6b9d); }
+        .card-breakout:hover { border-color: rgba(0, 217, 255, 0.3); }
+        .card-breakout h2 { color: #00d9ff; }
+        .card-breakout .tag { background: rgba(0, 217, 255, 0.15); color: #ff6b9d; }
+
+        .card-memory::before { background: linear-gradient(90deg, #a29bfe, #fd79a8); }
+        .card-memory:hover { border-color: rgba(162, 155, 254, 0.3); }
+        .card-memory h2 { color: #a29bfe; }
+        .card-memory .tag { background: rgba(162, 155, 254, 0.15); color: #fd79a8; }
+
+        .card-frogger::before { background: linear-gradient(90deg, #00b894, #55efc4); }
+        .card-frogger:hover { border-color: rgba(0, 184, 148, 0.3); }
+        .card-frogger h2 { color: #55efc4; }
+        .card-frogger .tag { background: rgba(0, 184, 148, 0.15); color: #00b894; }
+
+        .card-tetris::before { background: linear-gradient(90deg, #a855f7, #22d3ee); }
+        .card-tetris:hover { border-color: rgba(168, 85, 247, 0.35); }
+        .card-tetris h2 { color: #c4b5fd; }
+        .card-tetris .tag { background: rgba(34, 211, 238, 0.12); color: #22d3ee; }
+
+        .card-tetris-tanks::before { background: linear-gradient(90deg, #fbbf24, #a855f7, #22d3ee); }
+        .card-tetris-tanks:hover { border-color: rgba(251, 191, 36, 0.35); }
+        .card-tetris-tanks h2 { color: #fde68a; }
+        .card-tetris-tanks .tag { background: rgba(168, 85, 247, 0.12); color: #22d3ee; }
+
+        .card-tactics::before { background: linear-gradient(90deg, #38bdf8, #6366f1); }
+        .card-tactics:hover { border-color: rgba(56, 189, 248, 0.35); }
+        .card-tactics h2 { color: #7dd3fc; }
+        .card-tactics .tag { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+
+        .card-noir::before { background: linear-gradient(90deg, #d4af37, #5c4d7a); }
+        .card-noir:hover { border-color: rgba(212, 175, 55, 0.35); }
+        .card-noir h2 { color: #e8c547; }
+        .card-noir .tag { background: rgba(212, 175, 55, 0.12); color: #d4af37; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255,255,255,0.2);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 2.2rem; }
+            .games-grid { padding: 15px; gap: 15px; }
+            .game-card { padding: 22px 18px; border-radius: 18px; }
+            .game-card .emoji { font-size: 2.4rem; margin-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>АРКАДНЫЙ ЗАЛ</h1>
+        <p>8 простых игр прямо в браузере. Выбирай и играй!</p>
+    </div>
+
+    <div class="games-grid">
+        <a href="snake.html" class="game-card card-snake">
+            <span class="emoji">🐍</span>
+            <h2>Змейка</h2>
+            <p>Собирай еду, расти и не врежься в себя. Классика, проверенная временем.</p>
+            <span class="tag">КЛАССИКА</span>
+        </a>
+
+        <a href="2048.html" class="game-card card-2048">
+            <span class="emoji">🔢</span>
+            <h2>2048</h2>
+            <p>Сдвигай плитки, складывай числа. Цель — собрать заветную 2048!</p>
+            <span class="tag">ГОЛОВОЛОМКА</span>
+        </a>
+
+        <a href="tetris.html" class="game-card card-tetris">
+            <span class="emoji">🧩</span>
+            <h2>Тетрис</h2>
+            <p>Классический марафон: призрак, hold, три следующих фигуры и комбо за серии линий. Ускоряйся с уровнем!</p>
+            <span class="tag">КЛАССИКА</span>
+        </a>
+
+        <a href="flappy.html" class="game-card card-flappy">
+            <span class="emoji">🐦</span>
+            <h2>Flappy Bird</h2>
+            <p>Проведи птичку между трубами. Один тап — один взлёт. Просто? Попробуй!</p>
+            <span class="tag">АРКАДА</span>
+        </a>
+
+        <a href="space-invaders.html" class="game-card card-space">
+            <span class="emoji">👾</span>
+            <h2>Space Invaders</h2>
+            <p>Защити Землю от армии пришельцев. Стреляй, уворачивайся, выживай!</p>
+            <span class="tag">РЕТРО</span>
+        </a>
+
+        <a href="traffic-dodge.html" class="game-card card-racing">
+            <span class="emoji">🚗</span>
+            <h2>Traffic Dodge</h2>
+            <p>Перестраивайся влево/вправо и объезжай машины. Просто, быстро и честно.</p>
+            <span class="tag">АРКАДА</span>
+        </a>
+
+        <a href="breakout.html" class="game-card card-breakout">
+            <span class="emoji">🧱</span>
+            <h2>Breakout</h2>
+            <p>Разбей все кирпичи ракеткой! Отбивай мяч, не упусти — три жизни на уровень.</p>
+            <span class="tag">АРКАДА</span>
+        </a>
+
+        <a href="memory.html" class="game-card card-memory">
+            <span class="emoji">🃏</span>
+            <h2>Найди пары</h2>
+            <p>Открывай карты по две и находи одинаковые символы. Меньше ходов — лучше результат!</p>
+            <span class="tag">ГОЛОВОЛОМКА</span>
+        </a>
+
+    </div>
+
+    <footer>Сделано с ❤️ — все игры работают офлайн, без регистрации</footer>
+</body>
+</html>
