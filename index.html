@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="stylesheet" href="mini-app.css">
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script defer src="mini-app.js"></script>
     <title>Аркадный Зал</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -220,14 +223,19 @@
         }
 
         @media (max-width: 600px) {
+            .hero { padding: 28px 16px 18px; }
             .hero h1 { font-size: 2.2rem; }
-            .games-grid { padding: 15px; gap: 15px; }
-            .game-card { padding: 22px 18px; border-radius: 18px; }
-            .game-card .emoji { font-size: 2.4rem; margin-bottom: 10px; }
+            .hero p { font-size: 1rem; }
+            .games-grid { padding: 10px 14px 40px; gap: 13px; }
+            .game-card { padding: 20px 16px; border-radius: 16px; }
+            .game-card .emoji { font-size: 2.2rem; margin-bottom: 10px; }
+            .game-card h2 { font-size: 1.2rem; }
+            .game-card p { font-size: 0.85rem; }
         }
     </style>
 </head>
 <body>
+    <div class="index-wrap">
     <div class="hero">
         <h1>АРКАДНЫЙ ЗАЛ</h1>
         <p>8 простых игр прямо в браузере. Выбирай и играй!</p>
@@ -265,7 +273,7 @@
         <a href="space-invaders.html" class="game-card card-space">
             <span class="emoji">👾</span>
             <h2>Space Invaders</h2>
-            <p>Защити Землю от армии пришельцев. Стреляй, уворачивайся, выживай!</p>
+            <p>Уничтожай ряды пришельцев волна за волной. Прячься за укрытиями — враги стреляют в ответ. Три жизни на всё!</p>
             <span class="tag">РЕТРО</span>
         </a>
 
@@ -279,7 +287,7 @@
         <a href="breakout.html" class="game-card card-breakout">
             <span class="emoji">🧱</span>
             <h2>Breakout</h2>
-            <p>Разбей все кирпичи ракеткой! Отбивай мяч, не упусти — три жизни на уровень.</p>
+            <p>Разбей все кирпичи ракеткой! Отбивай мяч и не дай ему упасть — три жизни.</p>
             <span class="tag">АРКАДА</span>
         </a>
 
@@ -293,5 +301,6 @@
     </div>
 
     <footer>Сделано с ❤️ — все игры работают офлайн, без регистрации</footer>
+    </div>
 </body>
 </html>

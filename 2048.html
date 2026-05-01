@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="stylesheet" href="mini-app.css">
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script defer src="mini-app.js"></script>
     <title>2048</title>
     <style>
         * {
@@ -13,17 +16,27 @@
             user-select: none;
         }
 
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
+
         body {
             background: #1a1a2e;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            height: var(--app-vh, 100vh);
+            max-height: var(--app-vh, 100vh);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #fff;
             overflow: hidden;
             overscroll-behavior: none;
-            touch-action: none;
+            touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -31,7 +44,12 @@
             text-align: center;
             max-width: 460px;
             width: 100%;
-            padding: 20px;
+            max-height: 100%;
+            padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         h1 {
@@ -82,10 +100,13 @@
             border-radius: 15px;
             padding: 12px;
             margin: 0 auto;
-            width: 420px;
-            height: 420px;
+            width: min(92vw, 420px);
+            aspect-ratio: 1;
+            height: auto;
+            max-width: 100%;
             position: relative;
             border: 1px solid rgba(255, 255, 255, 0.08);
+            touch-action: none;
         }
 
         .grid-bg {
@@ -189,16 +210,36 @@
             font-size: 0.85rem;
         }
 
+        .back-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top, 0px));
+            left: max(10px, env(safe-area-inset-left, 0px));
+            z-index: 200;
+            background: rgba(0,0,0,0.52);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: rgba(255,255,255,0.82);
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            line-height: 1;
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.18); }
+
         @media (max-width: 480px) {
-            .grid-container {
-                width: min(92vw, 380px);
-                height: min(92vw, 380px);
-            }
-            h1 { font-size: 2.2rem; }
+            h1 { font-size: 2rem; }
+            .subtitle { font-size: 0.88rem; }
         }
     </style>
 </head>
 <body>
+    <a class="back-btn" href="index.html">← Назад</a>
     <div class="game-container">
         <h1>2048</h1>
         <p class="subtitle">Соединяй числа, собери 2048!</p>
@@ -237,15 +278,6 @@
     </div>
 
     <script>
-        // Блокируем «резину»/скролл на мобилке внутри игры
-        document.addEventListener('touchmove', (e) => {
-            if (!e.cancelable) return;
-            const t = e.target;
-            const inGame = (t && t.closest) ? !!t.closest('#gridContainer, button, .game-container') : false;
-            if (inGame) e.preventDefault();
-        }, { passive: false });
-        document.addEventListener('gesturestart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-
         const SIZE = 4;
         let grid, score, best, won, moved;
         const tilesLayer = document.getElementById('tilesLayer');
@@ -341,6 +373,24 @@
             const el = tilesLayer.querySelector(`[data-id="${id}"]`);
             if (el) el.remove();
         }
+
+        function reflowTiles() {
+            if (!grid || !grid.length) return;
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    const cell = grid[r][c];
+                    if (cell.value && cell.tileId) {
+                        updateTileElement(cell.tileId, r, c, cell.value, false);
+                    }
+                }
+            }
+        }
+
+        function onViewportChange() {
+            reflowTiles();
+        }
+        window.addEventListener('resize', onViewportChange);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', onViewportChange);
 
         function initGame() {
             grid = Array.from({ length: SIZE }, () =>

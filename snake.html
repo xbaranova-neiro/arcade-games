@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="stylesheet" href="mini-app.css">
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script defer src="mini-app.js"></script>
     <title>Змейка</title>
     <style>
         * {
@@ -155,6 +158,28 @@
             justify-content: center;
         }
 
+        .back-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top, 0px));
+            left: max(10px, env(safe-area-inset-left, 0px));
+            z-index: 200;
+            background: rgba(0,0,0,0.52);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: rgba(255,255,255,0.82);
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            line-height: 1;
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.18); }
+
         @media (max-width: 600px) {
             canvas {
                 width: min(92vw, 380px) !important;
@@ -169,10 +194,19 @@
             h1 {
                 font-size: 1.8rem;
             }
+            .score-board {
+                gap: 12px;
+                font-size: 0.95rem;
+                flex-wrap: wrap;
+            }
+            .score-board span {
+                padding: 6px 14px;
+            }
         }
     </style>
 </head>
 <body>
+    <a class="back-btn" href="index.html">← Назад</a>
     <div class="game-container">
         <h1>ЗМЕЙКА</h1>
         <div class="score-board">
@@ -206,15 +240,6 @@
     </div>
 
     <script>
-        // Блокируем «резину»/скролл на мобилке внутри игры
-        document.addEventListener('touchmove', (e) => {
-            if (!e.cancelable) return;
-            const t = e.target;
-            const inGame = (t && t.closest) ? !!t.closest('canvas, button, .mobile-controls, .game-container') : false;
-            if (inGame) e.preventDefault();
-        }, { passive: false });
-        document.addEventListener('gesturestart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
 
@@ -460,6 +485,27 @@
                     break;
             }
         });
+
+        // Свайп на canvas
+        let swipeStartX = 0, swipeStartY = 0;
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            swipeStartX = e.touches[0].clientX;
+            swipeStartY = e.touches[0].clientY;
+        }, { passive: false });
+        canvas.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].clientX - swipeStartX;
+            const dy = e.changedTouches[0].clientY - swipeStartY;
+            const adx = Math.abs(dx), ady = Math.abs(dy);
+            if (Math.max(adx, ady) < 25 || !isRunning) return;
+            if (adx > ady) {
+                if (dx > 0 && direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                else if (dx < 0 && direction.x !== 1) nextDirection = { x: -1, y: 0 };
+            } else {
+                if (dy > 0 && direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                else if (dy < 0 && direction.y !== 1) nextDirection = { x: 0, y: -1 };
+            }
+        }, { passive: false });
 
         // Мобильное управление
         document.getElementById('btnUp').addEventListener('click', () => {

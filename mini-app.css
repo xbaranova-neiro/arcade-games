@@ -1,0 +1,42 @@
+/* Общая адаптация: телефоны, вырезы, WebView / Telegram Mini App */
+
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+}
+
+html {
+    height: 100%;
+    height: -webkit-fill-available;
+}
+
+html.mini-app-ready body {
+    /* стабильная высота вместо «прыгающего» 100vh в WebView */
+    min-height: var(--app-vh, 100vh);
+    min-height: 100dvh;
+}
+
+/* Контент игр — отступы от выреза / home indicator */
+@media (max-width: 900px) {
+    .game-container,
+    .layout {
+        box-sizing: border-box;
+        padding-top: max(4px, var(--sat));
+        padding-left: max(12px, var(--sal));
+        padding-right: max(12px, var(--sar));
+        padding-bottom: max(8px, var(--sab));
+    }
+}
+
+/* Главная (лаунчер): без фиксации body, только безопасные поля */
+.index-wrap {
+    box-sizing: border-box;
+    min-height: var(--app-vh, 100vh);
+    min-height: 100dvh;
+    padding-top: max(12px, var(--sat));
+    padding-left: max(16px, var(--sal));
+    padding-right: max(16px, var(--sar));
+    padding-bottom: max(24px, var(--sab));
+}
